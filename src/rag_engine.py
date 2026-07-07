@@ -1,13 +1,14 @@
-import sqlite3
-import re
-import subprocess
-import urllib.request
-import time
 import platform
+import re
+import sqlite3
+import subprocess
+import time
+import urllib.request
 from pathlib import Path
+
 from nltk.stem.snowball import ItalianStemmer
 
-from src.config import MODEL, OLLAMA_TAGS_URL, DB_PATH, TOP_K
+from src.config import DB_PATH, MODEL, OLLAMA_TAGS_URL, TOP_K
 
 stemmer = ItalianStemmer()
 
@@ -16,15 +17,15 @@ ITALIAN_STOPWORDS = {
     "da", "dal", "dallo", "dai", "dagli", "dalla", "dalle", "di", "del", "dello", "dei",
     "degli", "della", "delle", "e", "ed", "in", "nel", "nello", "nei", "negli", "nella",
     "nelle", "su", "sul", "sullo", "sui", "sugli", "sulla", "sulle", "per", "tra", "fra",
-    "il", "lo", "la", "i", "gli", "le", "un", "uno", "una", "ma", "o", "ed", "che", "chi",
+    "il", "lo", "la", "i", "gli", "le", "un", "uno", "una", "ma", "o", "che", "chi",
     "cui", "come", "dove", "quando", "quanto", "quale", "quali", "qual", "se", "si", "no",
     "non", "piu", "meno", "anche", "solo", "sempre", "mai", "poi", "già", "gia", "qui",
-    "lì", "li", "là", "la", "ne", "ci", "mi", "ti", "vi", "lo", "la", "gli", "le", "un", "una",
-    "del", "della", "delle", "dei", "degli", "dell", "nell", "sull", "tale", "tali", "questo",
-    "questa", "questi", "queste", "quello", "quella", "quelli", "quelle", "esso", "essa", "essi",
-    "esse", "sono", "sei", "era", "erano", "essere", "avere", "ha", "hanno", "hai", "ho", "abbiamo",
-    "avete", "fare", "fai", "fa", "fanno", "fatto", "molto", "molta", "molti", "molte", "poco",
-    "poca", "pochi", "poche", "più", "piu", "meno", "tra", "fra", "perché", "perche", "perche", "etc"
+    "lì", "li", "là", "ne", "ci", "mi", "ti", "vi", "del", "della", "delle", "dei", "degli",
+    "dell", "nell", "sull", "tale", "tali", "questo", "questa", "questi", "queste", "quello",
+    "quella", "quelli", "quelle", "esso", "essa", "essi", "esse", "sono", "sei", "era", "erano",
+    "essere", "avere", "ha", "hanno", "hai", "ho", "abbiamo", "avete", "fare", "fai", "fa",
+    "fanno", "fatto", "molto", "molta", "molti", "molte", "poco", "poca", "pochi", "poche",
+    "più", "piu", "tra", "fra", "perché", "perche", "etc"
 }
 
 BOT_IDENTITY = """
@@ -68,7 +69,7 @@ def ensure_ollama_running():
         "stdin": subprocess.DEVNULL,
         "stdout": subprocess.DEVNULL,
         "stderr": subprocess.DEVNULL,
-        "close_fds": True
+        "close_fds": True,
     }
 
     if platform.system() == "Windows":
@@ -85,8 +86,8 @@ def ensure_ollama_running():
 
 
 def remove_ansi_escape_sequences(text):
-    ansi_escape = re.compile(r'\x1B[@-_][0-?]*[ -/]*[@-~]')
-    return ansi_escape.sub('', text)
+    ansi_escape = re.compile(r"\x1B[@-_][0-?]*[ -/]*[@-~]")
+    return ansi_escape.sub("", text)
 
 
 def ask_ollama(prompt: str, model: str = MODEL) -> str:
@@ -94,7 +95,7 @@ def ask_ollama(prompt: str, model: str = MODEL) -> str:
         ["ollama", "run", model],
         input=prompt.encode("utf-8"),
         stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE
+        stderr=subprocess.PIPE,
     )
 
     if result.returncode != 0:
@@ -141,6 +142,12 @@ def chunk_score(query_words, chunk_words):
     return overlap / length_penalty
 
 
+def clamp_relevance(score: float) -> int:
+    if score <= 0:
+        return 0
+    return max(1, min(99, int(round(score * 100))))
+
+
 class RAGEngine:
     def __init__(self, db_path: str = DB_PATH, top_k: int = TOP_K):
         self.db_path = db_path
@@ -163,12 +170,14 @@ class RAGEngine:
 
         for row in rows:
             chunk_id, source_file, page_number, text = row
-            self.chunks.append({
-                "id": chunk_id,
-                "source_file": source_file,
-                "page_number": page_number,
-                "text": text
-            })
+            self.chunks.append(
+                {
+                    "id": chunk_id,
+                    "source_file": source_file,
+                    "page_number": page_number,
+                    "text": text,
+                }
+            )
             self.normalized_chunks.append(normalize(text))
 
     def search_deterministic(self, query: str):
@@ -176,24 +185,23 @@ class RAGEngine:
         if not q_words:
             return []
 
-        scores = []
-
+        scored = []
         for i, ch_words in enumerate(self.normalized_chunks):
             score = chunk_score(q_words, ch_words)
             if score > 0:
-                ch = self.chunks[i]
-                scores.append((score, ch))
+                chunk = dict(self.chunks[i])
+                chunk["score"] = score
+                scored.append(chunk)
 
-        scores.sort(reverse=True, key=lambda x: x[0])
+        scored.sort(key=lambda item: item["score"], reverse=True)
 
         results = []
         seen_ids = set()
-
-        for score, ch in scores:
-            if ch["id"] in seen_ids:
+        for chunk in scored:
+            if chunk["id"] in seen_ids:
                 continue
-            results.append(ch)
-            seen_ids.add(ch["id"])
+            results.append(chunk)
+            seen_ids.add(chunk["id"])
             if len(results) >= self.top_k:
                 break
 
@@ -223,28 +231,49 @@ class RAGEngine:
 
         return "\n\n".join(blocks)
 
-    def build_source_links(self, chunks):
-        links = []
-        seen_files = set()
+    def build_source_blocks(self, chunks):
+        if not chunks:
+            return "<i>Nessuna fonte trovata.</i>"
 
+        grouped = {}
         for ch in chunks:
             file_path = Path(ch["source_file"]).resolve()
             file_key = str(file_path).lower()
-            if file_key in seen_files:
-                continue
-            seen_files.add(file_key)
+            grouped.setdefault(file_key, {"path": file_path, "chunks": []})
+            grouped[file_key]["chunks"].append(ch)
+
+        blocks = []
+        for payload in grouped.values():
+            file_path = payload["path"]
+            file_chunks = payload["chunks"]
+            best_chunk = max(file_chunks, key=lambda item: item.get("score", 0))
 
             href = file_path.as_uri()
+            if best_chunk.get("page_number"):
+                href = f"{href}#page={best_chunk['page_number']}"
 
-            if ch["page_number"]:
-                href = f"{href}#page={ch['page_number']}"
-                label = f"{file_path.name} - pagina {ch['page_number']}"
+            relevance = clamp_relevance(best_chunk.get("score", 0))
+            if best_chunk.get("page_number"):
+                page_text = f"pagina {best_chunk['page_number']}"
             else:
-                label = file_path.name
+                page_text = "pagina non disponibile"
 
-            links.append(f'<a href="{href}">{label}</a>')
+            excerpt = best_chunk["text"].strip().replace("\n", " ")
+            if len(excerpt) > 420:
+                excerpt = excerpt[:420].rstrip() + "..."
 
-        return "<br>".join(links)
+            blocks.append(
+                "<div style='padding:8px 0; border-bottom:1px dashed #777; margin-bottom:8px;'>"
+                f"<div><b>Fonte:</b> <a href='{href}'>{file_path.name}</a>"
+                f" <span style='color:#666;'>- Rilevanza: {relevance}% - {page_text}</span></div>"
+                f"<div style='margin-top:6px; white-space:pre-wrap;'>{excerpt}</div>"
+                "</div>"
+            )
+
+        return "".join(blocks)
+
+    def build_source_links(self, chunks):
+        return self.build_source_blocks(chunks)
 
     def build_prompt(self, context: str, question: str):
         return f"""
