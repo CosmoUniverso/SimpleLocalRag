@@ -1,4 +1,3 @@
-import html
 import sys
 
 from PyQt6.QtCore import QObject, QThread, QTimer, pyqtSignal
@@ -119,13 +118,9 @@ class RAGWindow(QWidget):
         self.chat_history.setOpenExternalLinks(False)
         self.chat_history.setMinimumHeight(320)
         self.chat_history.setStyleSheet(
-            "QTextBrowser { background: #ffffff; color: #000000; border: 1px solid #cbd5e1; }"
+            "QTextBrowser { background: #111827; color: #ffffff; border: 1px solid #374151; }"
         )
-        self.chat_history.setHtml(
-            "<div style='color:#666; font-style:italic;'>"
-            "La conversazione apparirà qui."
-            "</div>"
-        )
+        self.chat_history.setPlainText("La conversazione apparirà qui.")
         layout.addWidget(self.chat_history)
 
         self.question_box = QTextEdit()
@@ -150,7 +145,7 @@ class RAGWindow(QWidget):
         self.sources_box.anchorClicked.connect(self.open_source_link)
         self.sources_box.setMinimumHeight(210)
         self.sources_box.setStyleSheet(
-            "QTextBrowser { background: #ffffff; color: #000000; border: 1px solid #cbd5e1; }"
+            "QTextBrowser { background: #111827; color: #ffffff; border: 1px solid #374151; }"
         )
         layout.addWidget(self.sources_box)
 
@@ -169,29 +164,13 @@ class RAGWindow(QWidget):
         self.question_box.setEnabled(enabled)
 
     def append_chat_message(self, role, text, color):
-        safe_text = html.escape(text).replace("\n", "<br>")
-        block = (
-            "<div style='margin:0 0 12px 0; padding:10px 12px; border-radius:10px; "
-            "background:#ffffff; color:#000000; border:1px solid #cbd5e1;'>"
-            f"<div style='font-weight:700; color:#000000; margin-bottom:4px;'>{role}</div>"
-            f"<div style='white-space:pre-wrap; color:#000000;'>{safe_text}</div>"
-            "</div>"
-        )
-        self.chat_history.append(block)
+        self.chat_history.append(f"{role}\n{text}")
         scroll_bar = self.chat_history.verticalScrollBar()
         if scroll_bar is not None:
             scroll_bar.setValue(scroll_bar.maximum())
 
     def append_system_message(self, text):
-        safe_text = html.escape(text).replace("\n", "<br>")
-        block = (
-            "<div style='margin:0 0 12px 0; padding:10px 12px; border-radius:10px; "
-            "background:#ffffff; color:#000000; border:1px solid #cbd5e1;'>"
-            f"<div style='font-weight:700; margin-bottom:4px;'>Sistema</div>"
-            f"<div style='white-space:pre-wrap; color:#000000;'>{safe_text}</div>"
-            "</div>"
-        )
-        self.chat_history.append(block)
+        self.chat_history.append(f"Sistema\n{text}")
         scroll_bar = self.chat_history.verticalScrollBar()
         if scroll_bar is not None:
             scroll_bar.setValue(scroll_bar.maximum())
@@ -226,7 +205,7 @@ class RAGWindow(QWidget):
         if not question:
             return
 
-        self.append_chat_message("Tu", question, "#000000")
+        self.append_chat_message("Tu", question, "#ffffff")
         self.question_box.clear()
         self.sources_box.setHtml("<i>In attesa della risposta...</i>")
         self.start_ask_worker(question)
@@ -234,7 +213,7 @@ class RAGWindow(QWidget):
     def on_ask_finished(self, response, chunks):
         self.thinking_timer.stop()
         self.thinking_label.setText("")
-        self.append_chat_message("AI", response, "#000000")
+        self.append_chat_message("AI", response, "#ffffff")
         if chunks:
             self.sources_box.setHtml(self.controller.rag.build_source_links(chunks))
         else:
@@ -244,7 +223,7 @@ class RAGWindow(QWidget):
     def on_ask_error(self, message):
         self.thinking_timer.stop()
         self.thinking_label.setText("")
-        self.append_chat_message("AI", f"Errore: {message}", "#000000")
+        self.append_chat_message("AI", f"Errore: {message}", "#ffffff")
         self.sources_box.setHtml("<i>Errore durante la generazione delle fonti.</i>")
         self.set_interaction_enabled(True)
 

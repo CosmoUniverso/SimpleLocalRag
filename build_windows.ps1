@@ -14,6 +14,13 @@ $distPath = Join-Path $PSScriptRoot "dist"
 $workPath = Join-Path $PSScriptRoot "build\pyinstaller"
 $specPath = Join-Path $PSScriptRoot "build\pyinstaller-spec"
 $portableZip = Join-Path $PSScriptRoot "$Name-portable.zip"
+$releaseStamp = Get-Date -Format "yyyyMMdd-HHmmss"
+$previousZip = $portableZip
+$releaseCounter = 1
+while (Test-Path $portableZip) {
+    $portableZip = Join-Path $PSScriptRoot "$Name-portable-$releaseStamp-$releaseCounter.zip"
+    $releaseCounter++
+}
 $srcPath = Join-Path $PSScriptRoot "src"
 $pdfDocsPath = Join-Path $srcPath "pdf_docs"
 
