@@ -84,9 +84,9 @@ La UI mostra solo i modelli già scaricati in Ollama. Usa la casella di ricerca 
 
 Per chi lo riceve, il flusso deve essere questo:
 
-1. scarica il pacchetto `SimpleLocalRag-v0.1.3-portable.zip`
+1. scarica il pacchetto `SimpleLocalRag-v0.1.4-portable.zip`
 2. estrailo in una cartella qualsiasi
-3. fai doppio clic su `SimpleLocalRag-v0.1.3.exe`
+3. fai doppio clic su `SimpleLocalRag-v0.1.4.exe`
 
 Non servono PowerShell, cmd o Python.
 
@@ -102,9 +102,27 @@ Installa prima `PyInstaller` con `pip install -r requirements.txt`, poi esegui:
 .\build_windows.ps1
 ```
 
-Il pacchetto condivisibile sarà `SimpleLocalRag-v0.1.3-portable.zip` e dentro troverai la cartella pronta da aprire con doppio clic.
+Il pacchetto condivisibile sarà `SimpleLocalRag-v0.1.4-portable.zip` e dentro troverai la cartella pronta da aprire con doppio clic.
 
-## 9. Note di sicurezza
+## 9. Domande frequenti
+
+### Si può scegliere la cartella che si vuole?
+
+Sì. Nella UI premi `Scegli cartella` e puoi puntare a qualunque cartella locale che contenga PDF, TXT o DOCX.
+
+### Il programma è portable?
+
+Sì. Il pacchetto è portable: non richiede installazione nel sistema, basta estrarlo e avviare l'eseguibile.
+
+### Quindi ogni volta deve reindicizzare i file?
+
+No. La reindicizzazione serve solo quando cambi cartella, aggiungi, modifichi o elimini documenti. Se non cambia nulla, non serve rifare l'indicizzazione.
+
+### Le fonti possono indicare nome file e paragrafo?
+
+Sì, in parte. Le fonti mostrano sempre il nome del file e, quando disponibile, anche la pagina e un indice del blocco/paragrafo estratto.
+
+## 10. Note di sicurezza
 
 - Tieni i documenti su disco locale.
 - Non configurare integrazioni cloud.

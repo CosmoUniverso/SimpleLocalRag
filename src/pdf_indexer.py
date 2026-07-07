@@ -8,6 +8,12 @@ class FileIndexer:
     def __init__(self, db_path=DB_PATH):
         self.db_path = db_path
 
+    def _ensure_chunk_index_column(self, cursor):
+        cursor.execute("PRAGMA table_info(chunks)")
+        columns = {row[1] for row in cursor.fetchall()}
+        if "chunk_index" not in columns:
+            cursor.execute("ALTER TABLE chunks ADD COLUMN chunk_index INTEGER")
+
     def clear_db(self):
         conn = sqlite3.connect(self.db_path)
         c = conn.cursor()
@@ -23,9 +29,11 @@ class FileIndexer:
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 source_file TEXT NOT NULL,
                 page_number INTEGER,
+                chunk_index INTEGER,
                 text TEXT NOT NULL
             )
         """)
+        self._ensure_chunk_index_column(c)
         conn.commit()
         conn.close()
 
@@ -46,8 +54,8 @@ class FileIndexer:
                 text = text.strip()
                 if text:
                     c.execute(
-                        "INSERT INTO chunks (source_file, page_number, text) VALUES (?, ?, ?)",
-                        (str(file_path), page_num, text)
+                        "INSERT INTO chunks (source_file, page_number, chunk_index, text) VALUES (?, ?, ?, ?)",
+                        (str(file_path), page_num, page_num, text)
                     )
 
         conn.commit()
@@ -60,8 +68,8 @@ class FileIndexer:
         text = Path(file_path).read_text(encoding="utf-8", errors="ignore").strip()
         if text:
             c.execute(
-                "INSERT INTO chunks (source_file, page_number, text) VALUES (?, ?, ?)",
-                (str(file_path), None, text)
+                "INSERT INTO chunks (source_file, page_number, chunk_index, text) VALUES (?, ?, ?, ?)",
+                (str(file_path), None, 1, text)
             )
 
         conn.commit()
@@ -76,8 +84,8 @@ class FileIndexer:
 
         if text:
             c.execute(
-                "INSERT INTO chunks (source_file, page_number, text) VALUES (?, ?, ?)",
-                (str(file_path), None, text)
+                "INSERT INTO chunks (source_file, page_number, chunk_index, text) VALUES (?, ?, ?, ?)",
+                (str(file_path), None, 1, text)
             )
 
         conn.commit()

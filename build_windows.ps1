@@ -1,5 +1,5 @@
 param(
-    [string]$Name = "SimpleLocalRag-v0.1.3"
+    [string]$Name = "SimpleLocalRag-v0.1.4"
 )
 
 $ErrorActionPreference = "Stop"

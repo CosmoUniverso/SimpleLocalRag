@@ -11,6 +11,7 @@ from PyQt6.QtWidgets import (
     QLineEdit,
     QPushButton,
     QProgressBar,
+    QPlainTextEdit,
     QTextBrowser,
     QTextEdit,
     QVBoxLayout,
@@ -112,13 +113,11 @@ class RAGWindow(QWidget):
         self.update_progress.setRange(0, 0)
         layout.addWidget(self.update_progress)
 
-        self.chat_history = QTextBrowser()
+        self.chat_history = QPlainTextEdit()
         self.chat_history.setReadOnly(True)
-        self.chat_history.setOpenLinks(False)
-        self.chat_history.setOpenExternalLinks(False)
         self.chat_history.setMinimumHeight(320)
         self.chat_history.setStyleSheet(
-            "QTextBrowser { background: #111827; color: #ffffff; border: 1px solid #374151; }"
+            "QPlainTextEdit { background: #111827; color: #ffffff; border: 1px solid #374151; }"
         )
         self.chat_history.setPlainText("La conversazione apparirà qui.")
         layout.addWidget(self.chat_history)
@@ -164,13 +163,13 @@ class RAGWindow(QWidget):
         self.question_box.setEnabled(enabled)
 
     def append_chat_message(self, role, text, color):
-        self.chat_history.append(f"{role}\n{text}")
+        self.chat_history.appendPlainText(f"{role}\n{text}\n")
         scroll_bar = self.chat_history.verticalScrollBar()
         if scroll_bar is not None:
             scroll_bar.setValue(scroll_bar.maximum())
 
     def append_system_message(self, text):
-        self.chat_history.append(f"Sistema\n{text}")
+        self.chat_history.appendPlainText(f"Sistema\n{text}\n")
         scroll_bar = self.chat_history.verticalScrollBar()
         if scroll_bar is not None:
             scroll_bar.setValue(scroll_bar.maximum())

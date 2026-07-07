@@ -161,7 +161,7 @@ class RAGEngine:
     def _load_chunks(self):
         conn = sqlite3.connect(self.db_path)
         c = conn.cursor()
-        c.execute("SELECT id, source_file, page_number, text FROM chunks")
+        c.execute("SELECT id, source_file, page_number, chunk_index, text FROM chunks")
         rows = c.fetchall()
         conn.close()
 
@@ -169,12 +169,13 @@ class RAGEngine:
         self.normalized_chunks = []
 
         for row in rows:
-            chunk_id, source_file, page_number, text = row
+            chunk_id, source_file, page_number, chunk_index, text = row
             self.chunks.append(
                 {
                     "id": chunk_id,
                     "source_file": source_file,
                     "page_number": page_number,
+                    "chunk_index": chunk_index,
                     "text": text,
                 }
             )
@@ -258,6 +259,11 @@ class RAGEngine:
             else:
                 page_text = "pagina non disponibile"
 
+            if best_chunk.get("chunk_index"):
+                chunk_text = f"paragrafo/chunk {best_chunk['chunk_index']}"
+            else:
+                chunk_text = "paragrafo/chunk non disponibile"
+
             excerpt = best_chunk["text"].strip().replace("\n", " ")
             if len(excerpt) > 420:
                 excerpt = excerpt[:420].rstrip() + "..."
@@ -265,7 +271,7 @@ class RAGEngine:
             blocks.append(
                 "<div style='padding:8px 0; border-bottom:1px dashed #4b5563; margin-bottom:8px; color:#ffffff;'>"
                 f"<div><b>Fonte:</b> <a href='{href}' style='color:#ffffff; text-decoration:underline;'>{file_path.name}</a>"
-                f" <span style='color:#ffffff;'>- Rilevanza: {relevance}% - {page_text}</span></div>"
+                f" <span style='color:#ffffff;'>- Rilevanza: {relevance}% - {page_text} - {chunk_text}</span></div>"
                 f"<div style='margin-top:6px; white-space:pre-wrap; color:#ffffff;'>{excerpt}</div>"
                 "</div>"
             )
