@@ -84,9 +84,9 @@ La UI mostra solo i modelli già scaricati in Ollama. Usa la casella di ricerca 
 
 Per chi lo riceve, il flusso deve essere questo:
 
-1. scarica il pacchetto `SimoneRag-portable.zip`
+1. scarica il pacchetto `SimpleLocalRag-v0.1.3-portable.zip`
 2. estrailo in una cartella qualsiasi
-3. fai doppio clic su `SimoneRag.exe`
+3. fai doppio clic su `SimpleLocalRag-v0.1.3.exe`
 
 Non servono PowerShell, cmd o Python.
 
@@ -102,7 +102,7 @@ Installa prima `PyInstaller` con `pip install -r requirements.txt`, poi esegui:
 .\build_windows.ps1
 ```
 
-Il pacchetto condivisibile sarà `SimoneRag-portable.zip` e dentro troverai la cartella pronta da aprire con doppio clic.
+Il pacchetto condivisibile sarà `SimpleLocalRag-v0.1.3-portable.zip` e dentro troverai la cartella pronta da aprire con doppio clic.
 
 ## 9. Note di sicurezza
 

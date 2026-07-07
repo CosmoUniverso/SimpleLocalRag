@@ -263,10 +263,10 @@ class RAGEngine:
                 excerpt = excerpt[:420].rstrip() + "..."
 
             blocks.append(
-                "<div style='padding:8px 0; border-bottom:1px dashed #777; margin-bottom:8px;'>"
-                f"<div><b>Fonte:</b> <a href='{href}'>{file_path.name}</a>"
-                f" <span style='color:#666;'>- Rilevanza: {relevance}% - {page_text}</span></div>"
-                f"<div style='margin-top:6px; white-space:pre-wrap;'>{excerpt}</div>"
+                "<div style='padding:8px 0; border-bottom:1px dashed #cbd5e1; margin-bottom:8px; color:#000000;'>"
+                f"<div><b>Fonte:</b> <a href='{href}' style='color:#000000; text-decoration:underline;'>{file_path.name}</a>"
+                f" <span style='color:#000000;'>- Rilevanza: {relevance}% - {page_text}</span></div>"
+                f"<div style='margin-top:6px; white-space:pre-wrap; color:#000000;'>{excerpt}</div>"
                 "</div>"
             )
 
