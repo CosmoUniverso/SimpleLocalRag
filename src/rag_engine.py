@@ -11,6 +11,22 @@ from src.config import MODEL, OLLAMA_TAGS_URL, DB_PATH, TOP_K
 
 stemmer = ItalianStemmer()
 
+ITALIAN_STOPWORDS = {
+    "a", "ad", "al", "allo", "ai", "agli", "all", "alla", "alle", "con", "col", "coi",
+    "da", "dal", "dallo", "dai", "dagli", "dalla", "dalle", "di", "del", "dello", "dei",
+    "degli", "della", "delle", "e", "ed", "in", "nel", "nello", "nei", "negli", "nella",
+    "nelle", "su", "sul", "sullo", "sui", "sugli", "sulla", "sulle", "per", "tra", "fra",
+    "il", "lo", "la", "i", "gli", "le", "un", "uno", "una", "ma", "o", "ed", "che", "chi",
+    "cui", "come", "dove", "quando", "quanto", "quale", "quali", "qual", "se", "si", "no",
+    "non", "piu", "meno", "anche", "solo", "sempre", "mai", "poi", "già", "gia", "qui",
+    "lì", "li", "là", "la", "ne", "ci", "mi", "ti", "vi", "lo", "la", "gli", "le", "un", "una",
+    "del", "della", "delle", "dei", "degli", "dell", "nell", "sull", "tale", "tali", "questo",
+    "questa", "questi", "queste", "quello", "quella", "quelli", "quelle", "esso", "essa", "essi",
+    "esse", "sono", "sei", "era", "erano", "essere", "avere", "ha", "hanno", "hai", "ho", "abbiamo",
+    "avete", "fare", "fai", "fa", "fanno", "fatto", "molto", "molta", "molti", "molte", "poco",
+    "poca", "pochi", "poche", "più", "piu", "meno", "tra", "fra", "perché", "perche", "perche", "etc"
+}
+
 BOT_IDENTITY = """
 Ti chiami Vivo.
 Parli in italiano.
@@ -101,7 +117,13 @@ def normalize(text: str):
     text = text.lower()
     text = re.sub(r"[^a-zàèéìòùç0-9 ]", " ", text)
     words = text.split()
-    stems = [stemmer.stem(w) for w in words]
+    stems = []
+    for word in words:
+        if len(word) <= 2:
+            continue
+        if word in ITALIAN_STOPWORDS:
+            continue
+        stems.append(stemmer.stem(word))
     return stems
 
 
@@ -109,11 +131,13 @@ def chunk_score(query_words, chunk_words):
     if not query_words or not chunk_words:
         return 0
 
-    overlap = sum(1 for w in query_words if w in chunk_words)
+    query_set = set(query_words)
+    chunk_set = set(chunk_words)
+    overlap = len(query_set & chunk_set)
     if overlap == 0:
         return 0
 
-    length_penalty = max(1, len(chunk_words) // 80)
+    length_penalty = max(1, len(chunk_set) // 80)
     return overlap / length_penalty
 
 
@@ -149,6 +173,9 @@ class RAGEngine:
 
     def search_deterministic(self, query: str):
         q_words = normalize(query)
+        if not q_words:
+            return []
+
         scores = []
 
         for i, ch_words in enumerate(self.normalized_chunks):
@@ -198,9 +225,15 @@ class RAGEngine:
 
     def build_source_links(self, chunks):
         links = []
+        seen_files = set()
 
         for ch in chunks:
             file_path = Path(ch["source_file"]).resolve()
+            file_key = str(file_path).lower()
+            if file_key in seen_files:
+                continue
+            seen_files.add(file_key)
+
             href = file_path.as_uri()
 
             if ch["page_number"]:

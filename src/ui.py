@@ -4,6 +4,7 @@ from PyQt6.QtWidgets import (
     QLineEdit, QFileDialog
 )
 from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QDesktopServices
 import sys
 
 class RAGWindow(QWidget):
@@ -76,7 +77,8 @@ class RAGWindow(QWidget):
         # Fonti
         self.sources_box = QTextBrowser()
         self.sources_box.setReadOnly(True)
-        self.sources_box.setOpenExternalLinks(True)
+        self.sources_box.setOpenExternalLinks(False)
+        self.sources_box.anchorClicked.connect(self.open_source_link)
         layout.addWidget(self.sources_box)
 
         self.setLayout(layout)
@@ -126,6 +128,9 @@ class RAGWindow(QWidget):
         changes = self.controller.update_db()
         txt = "\n".join(f"{c}: {f}" for c, f in changes)
         self.response_box.setPlainText("Aggiornamenti:\n" + txt)
+
+    def open_source_link(self, url):
+        QDesktopServices.openUrl(url)
 
 
 def start_ui(controller):

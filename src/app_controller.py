@@ -11,6 +11,7 @@ class AppController:
         self.indexer = FileIndexer()
         self.documents_folder = self._load_documents_folder()
         Path(self.documents_folder).mkdir(parents=True, exist_ok=True)
+        self.indexer.init_db()
         self.watcher = FileWatcher(self.documents_folder)
         self.rag = RAGEngine()
         self.rag.set_model(self.model_manager.get_model())
